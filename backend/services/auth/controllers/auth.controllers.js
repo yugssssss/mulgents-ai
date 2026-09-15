@@ -90,18 +90,12 @@ export const login = async (
     );
 
     res.cookie(
-
       "session",
-
       sessionId,
-
       {
         httpOnly: true,
-
-        secure: false,
-
-        sameSite: "lax",
-
+        secure: true,
+        sameSite: "none",
         maxAge:
           1000 *
           60 *
@@ -153,8 +147,8 @@ export const logout =
         "session",
         {
           httpOnly: true,
-          secure: false,
-          sameSite: "lax"
+          secure: true,
+          sameSite: "none"
         }
       );
 
