@@ -13,8 +13,11 @@ dotenv.config();
 const app = express();
 const port=process.env.PORT || 5000
 app.use(cors({
-    origin:"http://localhost:5173",
-    credentials:true
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, postman) or any web origin
+      return callback(null, true);
+    },
+    credentials: true
 }));
 app.use(
   "/uploads",
