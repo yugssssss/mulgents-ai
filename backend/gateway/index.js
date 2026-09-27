@@ -23,7 +23,9 @@ app.use(
   "/uploads",
   express.static("uploads")
 );
-app.use(helmet());
+app.use(helmet({
+  crossOriginOpenerPolicy: false, // Required for Firebase signInWithPopup to work
+}));
 app.use(morgan("dev"));
 app.use(cookieParser());
 app.use(express.json({ limit: "50mb" }));

@@ -5,26 +5,72 @@ import ChatArea from "../components/ChatArea";
 import Sidebar from "../components/Sidebar";
 import api from "../utils/axios";
 import { setUserData } from "../redux/user.slice";
-import { signInWithPopup } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { auth, googleProvider } from "../../firebase";
+import { useEffect, useState } from "react";
 
 function Home() {
   const { userData } = useSelector(state => state.user);
   const dispatch=useDispatch()
-const login=async (token)=>{
-  try {
-    const {data}=await api.post(`/api/auth/login`,{token})
-    dispatch(setUserData(data.user))
-  } catch (error) {
-    console.log(error)
-  }
-}
-  const handleGoogleLogin =async () => {
-     const result =
-     await signInWithPopup(auth,googleProvider);
-    
-     const token =await result.user.getIdToken();
-     await login(token)
+  const [loginError, setLoginError] = useState(null);
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // Handle redirect result on page load (for signInWithRedirect flow)
+  useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          const token = await result.user.getIdToken();
+          await login(token);
+        }
+      } catch (error) {
+        console.error("Redirect result error:", error);
+        setLoginError("Login failed: " + (error?.message || "Unknown error"));
+      }
+    };
+    checkRedirect();
+  }, []);
+
+  const login = async (token) => {
+    try {
+      const {data} = await api.post(`/api/auth/login`, {token});
+      dispatch(setUserData(data.user));
+    } catch (error) {
+      console.error("Backend login error:", error);
+      setLoginError("Server error: " + (error?.response?.data?.message || error.message));
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoginError(null);
+    setLoginLoading(true);
+    try {
+      // Try popup first — fast UX
+      const result = await signInWithPopup(auth, googleProvider);
+      const token = await result.user.getIdToken();
+      await login(token);
+    } catch (error) {
+      console.error("Popup login error:", error?.code, error?.message);
+      // If popup was blocked or failed, fall back to redirect
+      if (
+        error?.code === "auth/popup-blocked" ||
+        error?.code === "auth/popup-closed-by-user" ||
+        error?.code === "auth/cancelled-popup-request"
+      ) {
+        try {
+          // Redirect flow — works even when popups are blocked
+          await signInWithRedirect(auth, googleProvider);
+        } catch (redirectError) {
+          console.error("Redirect login error:", redirectError);
+          setLoginError("Login failed: " + (redirectError?.message || "Unknown error"));
+          setLoginLoading(false);
+        }
+      } else {
+        setLoginError("Login failed: " + (error?.message || "Unknown error. Check browser console."));
+        setLoginLoading(false);
+      }
+    }
   };
 
   return (
@@ -44,11 +90,16 @@ const login=async (token)=>{
 
             <button
   onClick={handleGoogleLogin}
-  className="w-full flex items-center justify-center gap-3 py-[11px] rounded-xl text-sm font-medium text-white bg-gradient-to-br from-indigo-500 to-violet-700 hover:from-indigo-400 hover:to-violet-600 active:from-indigo-600 active:to-violet-800 border border-indigo-500/30 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all duration-150 cursor-pointer"
+  disabled={loginLoading}
+  className="w-full flex items-center justify-center gap-3 py-[11px] rounded-xl text-sm font-medium text-white bg-gradient-to-br from-indigo-500 to-violet-700 hover:from-indigo-400 hover:to-violet-600 active:from-indigo-600 active:to-violet-800 border border-indigo-500/30 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
 >
   <FaGoogle size={15} className="text-white" />
-  Continue with Google
+  {loginLoading ? "Signing in..." : "Continue with Google"}
 </button>
+
+            {loginError && (
+              <p className="text-[12px] text-red-400 text-center leading-snug">{loginError}</p>
+            )}
 
           </div>
         </div>
