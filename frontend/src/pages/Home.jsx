@@ -39,10 +39,13 @@ function Home() {
     } catch (error) {
       console.error("Backend login error:", error);
       setLoginError("Server error: " + (error?.response?.data?.message || error.message));
+    } finally {
+      setLoginLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
+    if (loginLoading) return;
     setLoginError(null);
     setLoginLoading(true);
     try {
@@ -52,14 +55,17 @@ function Home() {
       await login(token);
     } catch (error) {
       console.error("Popup login error:", error?.code, error?.message);
-      // If popup was blocked or failed, fall back to redirect
+      
+      // If popup was blocked, closed, cancelled, or duplicate credential/nonce error, try redirect
       if (
         error?.code === "auth/popup-blocked" ||
         error?.code === "auth/popup-closed-by-user" ||
-        error?.code === "auth/cancelled-popup-request"
+        error?.code === "auth/cancelled-popup-request" ||
+        error?.code === "auth/missing-or-invalid-nonce" ||
+        error?.code === "auth/account-exists-with-different-credential"
       ) {
         try {
-          // Redirect flow — works even when popups are blocked
+          // Redirect flow — works even when popups are blocked or COOP prevents postMessage
           await signInWithRedirect(auth, googleProvider);
         } catch (redirectError) {
           console.error("Redirect login error:", redirectError);
