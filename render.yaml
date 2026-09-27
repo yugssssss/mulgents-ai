@@ -1,0 +1,158 @@
+services:
+  # -------------------------------------------------------------
+  # 1. API GATEWAY (Public Web Service)
+  # -------------------------------------------------------------
+  - type: web
+    name: mulgents-gateway
+    env: docker
+    dockerContext: backend
+    dockerfilePath: gateway/Dockerfile
+    plan: free
+    region: singapore # Change to your preferred region (e.g. oregon, frankfurt, singapore)
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: mulgents-redis
+          property: connectionString
+      - key: AUTH_SERVICE
+        fromService:
+          type: pserv
+          name: mulgents-auth-service
+          property: hostport
+      - key: CHAT_SERVICE
+        fromService:
+          type: pserv
+          name: mulgents-chat-service
+          property: hostport
+      - key: AGENT_SERVICE
+        fromService:
+          type: pserv
+          name: mulgents-agent-service
+          property: hostport
+      - key: BILLING_SERVICE
+        fromService:
+          type: pserv
+          name: mulgents-billing-service
+          property: hostport
+
+  # -------------------------------------------------------------
+  # 2. AUTH SERVICE (Private Microservice)
+  # -------------------------------------------------------------
+  - type: pserv
+    name: mulgents-auth-service
+    env: docker
+    dockerContext: backend
+    dockerfilePath: services/auth/Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8001
+      - key: MONGODB_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: mulgents-redis
+          property: connectionString
+
+  # -------------------------------------------------------------
+  # 3. CHAT SERVICE (Private Microservice)
+  # -------------------------------------------------------------
+  - type: pserv
+    name: mulgents-chat-service
+    env: docker
+    dockerContext: backend
+    dockerfilePath: services/chat/Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8002
+      - key: MONGODB_URL
+        sync: false
+
+  # -------------------------------------------------------------
+  # 4. AGENT SERVICE (Private Microservice)
+  # -------------------------------------------------------------
+  - type: pserv
+    name: mulgents-agent-service
+    env: docker
+    dockerContext: backend
+    dockerfilePath: services/agent/Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8003
+      - key: MONGODB_URL
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: ap-south-1
+      - key: AWS_BUCKET_NAME
+        sync: false
+      - key: CHAT_SERVICE
+        fromService:
+          type: pserv
+          name: mulgents-chat-service
+          property: hostport
+      - key: AUTH_SERVICE
+        fromService:
+          type: pserv
+          name: mulgents-auth-service
+          property: hostport
+      - key: GATEWAY_URL
+        fromService:
+          type: web
+          name: mulgents-gateway
+          property: url
+
+  # -------------------------------------------------------------
+  # 5. BILLING SERVICE (Private Microservice)
+  # -------------------------------------------------------------
+  - type: pserv
+    name: mulgents-billing-service
+    env: docker
+    dockerContext: backend
+    dockerfilePath: services/billing/Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8004
+      - key: MONGODB_URL
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: AUTH_SERVICE
+        fromService:
+          type: pserv
+          name: mulgents-auth-service
+          property: hostport
+
+  # -------------------------------------------------------------
+  # REDIS INSTANCE (Render Redis / Upstash)
+  # -------------------------------------------------------------
+  - type: redis
+    name: mulgents-redis
+    plan: free
+    ipAllowList: [] # internal access only
