@@ -44,7 +44,7 @@ const agentService = formatUrl(process.env.AGENT_SERVICE, "http://localhost:8003
 const billingService = formatUrl(process.env.BILLING_SERVICE, "http://localhost:8004");
 
 const proxyOptions = (serviceName) => ({
-  timeout: 30000,
+  timeout: 60000,
   proxyErrorHandler: (err, res, next) => {
     console.error(`Proxy error connecting to ${serviceName}:`, err?.message || err);
     res.status(503).json({

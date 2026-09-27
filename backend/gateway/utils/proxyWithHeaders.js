@@ -3,7 +3,7 @@ import proxy from "express-http-proxy";
 export const proxyWithUser = (serviceUrl) => {
   return proxy(serviceUrl, {
     parseReqBody: true,
-    timeout: 30000,
+    timeout: 60000,
     proxyErrorHandler: (err, res, next) => {
       console.error(`Proxy error connecting to target service (${serviceUrl}):`, err?.message || err);
       res.status(503).json({
