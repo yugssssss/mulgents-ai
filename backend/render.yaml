@@ -139,6 +139,10 @@ services:
         value: 8004
       - key: MONGODB_URL
         sync: false
+      - key: RAZORPAY_KEY_ID
+        value: dummy_key_id
+      - key: RAZORPAY_KEY_SECRET
+        value: dummy_key_secret
       - key: AUTH_SERVICE
         fromService:
           type: web
