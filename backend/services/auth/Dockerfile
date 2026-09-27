@@ -4,11 +4,11 @@ WORKDIR /app
 
 # Root dependencies
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 # Auth dependencies
 COPY services/auth/package*.json ./services/auth/
-RUN cd services/auth && npm ci --omit=dev
+RUN cd services/auth && npm install --omit=dev
 
 # Source
 COPY services/auth ./services/auth

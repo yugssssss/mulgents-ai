@@ -3,10 +3,10 @@ FROM node
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 COPY services/chat/package*.json ./services/chat/
-RUN cd services/chat && npm ci --omit=dev
+RUN cd services/chat && npm install --omit=dev
 
 COPY services/chat ./services/chat
 COPY shared ./shared
