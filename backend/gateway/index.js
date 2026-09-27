@@ -32,10 +32,13 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 const formatUrl = (url, fallback) => {
   if (!url) return fallback;
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    return `http://${url}`;
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
   }
-  return url;
+  if (url.includes(".onrender.com")) {
+    return `https://${url}`;
+  }
+  return `http://${url}`;
 };
 
 const authService = formatUrl(process.env.AUTH_SERVICE, "http://localhost:8001");
@@ -43,18 +46,24 @@ const chatService = formatUrl(process.env.CHAT_SERVICE, "http://localhost:8002")
 const agentService = formatUrl(process.env.AGENT_SERVICE, "http://localhost:8003");
 const billingService = formatUrl(process.env.BILLING_SERVICE, "http://localhost:8004");
 
-const proxyOptions = (serviceName) => ({
+console.log(`🔗 Gateway Routing -> Auth Service: ${authService}`);
+console.log(`🔗 Gateway Routing -> Chat Service: ${chatService}`);
+console.log(`🔗 Gateway Routing -> Agent Service: ${agentService}`);
+console.log(`🔗 Gateway Routing -> Billing Service: ${billingService}`);
+
+const proxyOptions = (serviceName, targetUrl) => ({
   timeout: 60000,
   proxyErrorHandler: (err, res, next) => {
-    console.error(`Proxy error connecting to ${serviceName}:`, err?.message || err);
+    console.error(`Proxy error connecting to ${serviceName} (${targetUrl}):`, err?.message || err);
     res.status(503).json({
       message: `${serviceName} is starting up or unavailable. Please retry in a few seconds.`,
-      error: err?.message
+      error: err?.message,
+      code: err?.code
     });
   }
 });
 
-app.use("/api/auth", proxy(authService, proxyOptions("Auth Service")));
+app.use("/api/auth", proxy(authService, proxyOptions("Auth Service", authService)));
 app.use("/api/me", protect, getCurrentUser);
 app.use("/api/chat", protect, proxyWithUser(chatService));
 app.use("/api/agent", protect, proxyWithUser(agentService));

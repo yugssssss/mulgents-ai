@@ -21,22 +21,22 @@ services:
         fromService:
           type: web
           name: mulgents-auth-service
-          property: hostport
+          property: url
       - key: CHAT_SERVICE
         fromService:
           type: web
           name: mulgents-chat-service
-          property: hostport
+          property: url
       - key: AGENT_SERVICE
         fromService:
           type: web
           name: mulgents-agent-service
-          property: hostport
+          property: url
       - key: BILLING_SERVICE
         fromService:
           type: web
           name: mulgents-billing-service
-          property: hostport
+          property: url
 
   # -------------------------------------------------------------
   # 2. AUTH SERVICE (Web Service - Free Plan)
@@ -115,17 +115,17 @@ services:
         fromService:
           type: web
           name: mulgents-chat-service
-          property: hostport
+          property: url
       - key: AUTH_SERVICE
         fromService:
           type: web
           name: mulgents-auth-service
-          property: hostport
+          property: url
       - key: GATEWAY_URL
         fromService:
           type: web
           name: mulgents-gateway
-          property: hostport
+          property: url
 
   # -------------------------------------------------------------
   # 5. BILLING SERVICE (Web Service - Free Plan)
@@ -149,7 +149,7 @@ services:
         fromService:
           type: web
           name: mulgents-auth-service
-          property: hostport
+          property: url
 
   # -------------------------------------------------------------
   # REDIS INSTANCE (Render Redis)
