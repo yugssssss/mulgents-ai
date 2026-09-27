@@ -30,11 +30,24 @@ app.use(morgan("dev"));
 app.use(cookieParser());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
-app.use("/api/auth",proxy(process.env.AUTH_SERVICE))
-app.use("/api/me",protect,getCurrentUser)
-app.use("/api/chat",protect,proxyWithUser(process.env.CHAT_SERVICE))
-app.use("/api/agent",protect,proxyWithUser(process.env.AGENT_SERVICE))
-app.use("/api/billing",protect,proxyWithUser(process.env.BILLING_SERVICE))
+const formatUrl = (url, fallback) => {
+  if (!url) return fallback;
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    return `http://${url}`;
+  }
+  return url;
+};
+
+const authService = formatUrl(process.env.AUTH_SERVICE, "http://localhost:8001");
+const chatService = formatUrl(process.env.CHAT_SERVICE, "http://localhost:8002");
+const agentService = formatUrl(process.env.AGENT_SERVICE, "http://localhost:8003");
+const billingService = formatUrl(process.env.BILLING_SERVICE, "http://localhost:8004");
+
+app.use("/api/auth", proxy(authService));
+app.use("/api/me", protect, getCurrentUser);
+app.use("/api/chat", protect, proxyWithUser(chatService));
+app.use("/api/agent", protect, proxyWithUser(agentService));
+app.use("/api/billing", protect, proxyWithUser(billingService));
 
 
 app.get("/", (req, res) => {
