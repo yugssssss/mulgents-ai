@@ -6,7 +6,7 @@ services:
     name: mulgents-gateway
     env: docker
     dockerContext: backend
-    dockerfilePath: gateway/Dockerfile
+    dockerfilePath: backend/gateway/Dockerfile
     plan: free
     region: singapore # Change to your preferred region
     envVars:
@@ -45,7 +45,7 @@ services:
     name: mulgents-auth-service
     env: docker
     dockerContext: backend
-    dockerfilePath: services/auth/Dockerfile
+    dockerfilePath: backend/services/auth/Dockerfile
     plan: free
     envVars:
       - key: PORT
@@ -67,7 +67,7 @@ services:
     name: mulgents-chat-service
     env: docker
     dockerContext: backend
-    dockerfilePath: services/chat/Dockerfile
+    dockerfilePath: backend/services/chat/Dockerfile
     plan: free
     envVars:
       - key: PORT
@@ -82,7 +82,7 @@ services:
     name: mulgents-agent-service
     env: docker
     dockerContext: backend
-    dockerfilePath: services/agent/Dockerfile
+    dockerfilePath: backend/services/agent/Dockerfile
     plan: free
     envVars:
       - key: PORT
@@ -132,7 +132,7 @@ services:
     name: mulgents-billing-service
     env: docker
     dockerContext: backend
-    dockerfilePath: services/billing/Dockerfile
+    dockerfilePath: backend/services/billing/Dockerfile
     plan: free
     envVars:
       - key: PORT
