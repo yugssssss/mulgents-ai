@@ -7,87 +7,58 @@ import redis from "../../../shared/redis/redis.js";
 import { app } from "../config/firebase.js";
 
 
-export const login = async (
-  req,
-  res
-) => {
-
+export const login = async (req, res) => {
   try {
-
-
     const { token } = req.body;
-
-    const decoded =
-      await getAuth(app)
-        .verifyIdToken(token);
-
-    console.log(decoded);
-
-
-    let user =
-      await User.findOne({
-        firebaseUid:
-          decoded.uid,
-      });
-
-    if (!user) {
-
-      user =
-        await User.create({
-
-          firebaseUid:
-            decoded.uid,
-
-          email:
-            decoded.email,
-
-          name:
-            decoded.name,
-
-          avatar:
-            decoded.picture,
-
-          provider:
-            decoded.firebase
-              ?.sign_in_provider,
-        });
+    if (!token) {
+      return res.status(400).json({ message: "Firebase ID token is required" });
     }
 
-    const sessionId =
-      crypto.randomUUID();
+    const decoded = await getAuth(app).verifyIdToken(token);
+    console.log("✅ Verified Firebase User:", decoded.email, decoded.uid);
 
-    await redis.set(
-      `user-session:${user._id}`,
-      sessionId,
-      "EX",
-      60 * 60 * 24 * 7
-    );
+    let user = await User.findOne({
+      firebaseUid: decoded.uid,
+    });
 
-    await redis.set(
+    if (!user) {
+      user = await User.create({
+        firebaseUid: decoded.uid,
+        email: decoded.email,
+        name: decoded.name || decoded.email?.split("@")[0] || "User",
+        avatar: decoded.picture || "",
+        provider: decoded.firebase?.sign_in_provider || "google.com",
+      });
+      console.log("✅ Created new user in MongoDB:", user._id);
+    }
 
-      `session:${sessionId}`,
+    const sessionId = crypto.randomUUID();
 
-      JSON.stringify({
+    try {
+      await redis.set(
+        `user-session:${user._id}`,
+        sessionId,
+        "EX",
+        60 * 60 * 24 * 7
+      );
 
-        userId:
-          user._id,
-
-        email:
-          user.email,
-        avatar:
-          user.avatar,
-        name: user.name,
-        plan: user.plan,
-        credits: user.credits,
-        totalCredits: user.totalCredits
-
-
-      }),
-
-      "EX",
-
-      60 * 60 * 24 * 7
-    );
+      await redis.set(
+        `session:${sessionId}`,
+        JSON.stringify({
+          userId: user._id,
+          email: user.email,
+          avatar: user.avatar,
+          name: user.name,
+          plan: user.plan,
+          credits: user.credits,
+          totalCredits: user.totalCredits
+        }),
+        "EX",
+        60 * 60 * 24 * 7
+      );
+    } catch (redisErr) {
+      console.error("⚠️ Redis session cache warning:", redisErr.message);
+    }
 
     res.cookie(
       "session",
@@ -96,33 +67,20 @@ export const login = async (
         httpOnly: true,
         secure: true,
         sameSite: "none",
-        maxAge:
-          1000 *
-          60 *
-          60 *
-          24 *
-          7,
+        maxAge: 1000 * 60 * 60 * 24 * 7,
       }
     );
 
     return res.json({
-
       success: true,
-
       user,
     });
-
   } catch (error) {
-
-    return res
-      .status(401)
-      .json({
-        message:
-          error.message,
-      });
-
+    console.error("❌ Login Controller Error:", error);
+    return res.status(401).json({
+      message: error.message || "Authentication failed",
+    });
   }
-
 };
 
 

@@ -43,7 +43,18 @@ const chatService = formatUrl(process.env.CHAT_SERVICE, "http://localhost:8002")
 const agentService = formatUrl(process.env.AGENT_SERVICE, "http://localhost:8003");
 const billingService = formatUrl(process.env.BILLING_SERVICE, "http://localhost:8004");
 
-app.use("/api/auth", proxy(authService));
+const proxyOptions = (serviceName) => ({
+  timeout: 30000,
+  proxyErrorHandler: (err, res, next) => {
+    console.error(`Proxy error connecting to ${serviceName}:`, err?.message || err);
+    res.status(503).json({
+      message: `${serviceName} is starting up or unavailable. Please retry in a few seconds.`,
+      error: err?.message
+    });
+  }
+});
+
+app.use("/api/auth", proxy(authService, proxyOptions("Auth Service")));
 app.use("/api/me", protect, getCurrentUser);
 app.use("/api/chat", protect, proxyWithUser(chatService));
 app.use("/api/agent", protect, proxyWithUser(agentService));
