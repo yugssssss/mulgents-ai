@@ -8,7 +8,7 @@ services:
     dockerContext: backend
     dockerfilePath: gateway/Dockerfile
     plan: free
-    region: singapore # Change to your preferred region (e.g. oregon, frankfurt, singapore)
+    region: singapore # Change to your preferred region
     envVars:
       - key: PORT
         value: 8000
@@ -19,29 +19,29 @@ services:
           property: connectionString
       - key: AUTH_SERVICE
         fromService:
-          type: pserv
+          type: web
           name: mulgents-auth-service
           property: hostport
       - key: CHAT_SERVICE
         fromService:
-          type: pserv
+          type: web
           name: mulgents-chat-service
           property: hostport
       - key: AGENT_SERVICE
         fromService:
-          type: pserv
+          type: web
           name: mulgents-agent-service
           property: hostport
       - key: BILLING_SERVICE
         fromService:
-          type: pserv
+          type: web
           name: mulgents-billing-service
           property: hostport
 
   # -------------------------------------------------------------
-  # 2. AUTH SERVICE (Private Microservice)
+  # 2. AUTH SERVICE (Web Service - Free Plan)
   # -------------------------------------------------------------
-  - type: pserv
+  - type: web
     name: mulgents-auth-service
     env: docker
     dockerContext: backend
@@ -61,9 +61,9 @@ services:
           property: connectionString
 
   # -------------------------------------------------------------
-  # 3. CHAT SERVICE (Private Microservice)
+  # 3. CHAT SERVICE (Web Service - Free Plan)
   # -------------------------------------------------------------
-  - type: pserv
+  - type: web
     name: mulgents-chat-service
     env: docker
     dockerContext: backend
@@ -76,9 +76,9 @@ services:
         sync: false
 
   # -------------------------------------------------------------
-  # 4. AGENT SERVICE (Private Microservice)
+  # 4. AGENT SERVICE (Web Service - Free Plan)
   # -------------------------------------------------------------
-  - type: pserv
+  - type: web
     name: mulgents-agent-service
     env: docker
     dockerContext: backend
@@ -111,12 +111,12 @@ services:
         sync: false
       - key: CHAT_SERVICE
         fromService:
-          type: pserv
+          type: web
           name: mulgents-chat-service
           property: hostport
       - key: AUTH_SERVICE
         fromService:
-          type: pserv
+          type: web
           name: mulgents-auth-service
           property: hostport
       - key: GATEWAY_URL
@@ -126,9 +126,9 @@ services:
           property: hostport
 
   # -------------------------------------------------------------
-  # 5. BILLING SERVICE (Private Microservice)
+  # 5. BILLING SERVICE (Web Service - Free Plan)
   # -------------------------------------------------------------
-  - type: pserv
+  - type: web
     name: mulgents-billing-service
     env: docker
     dockerContext: backend
@@ -141,12 +141,12 @@ services:
         sync: false
       - key: AUTH_SERVICE
         fromService:
-          type: pserv
+          type: web
           name: mulgents-auth-service
           property: hostport
 
   # -------------------------------------------------------------
-  # REDIS INSTANCE (Render Redis / Upstash)
+  # REDIS INSTANCE (Render Redis)
   # -------------------------------------------------------------
   - type: redis
     name: mulgents-redis
