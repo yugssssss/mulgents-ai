@@ -14,24 +14,23 @@ function Home() {
   const dispatch = useDispatch();
   const [loginError, setLoginError] = useState(null);
   const [loginLoading, setLoginLoading] = useState(false);
-  const [sessionChecked, setSessionChecked] = useState(false);
+  const [sessionChecking, setSessionChecking] = useState(true);
 
-  // On mount: restore session from cookie (fixes login-on-refresh bug)
+  // On mount: attempt session restore with 4s timeout (so page never hangs)
   useEffect(() => {
     const restoreSession = async () => {
       try {
-        const { data } = await api.get("/api/me");
+        const { data } = await api.get("/api/me", { timeout: 4000 });
         if (data?.user) {
           dispatch(setUserData(data.user));
         }
       } catch {
-        // No valid session — user must log in
+        // No valid session or service warming up — user can click login
       } finally {
-        setSessionChecked(true);
+        setSessionChecking(false);
       }
     };
 
-    // Also handle Google redirect result
     const checkRedirect = async () => {
       try {
         const result = await getRedirectResult(auth);
@@ -89,15 +88,6 @@ function Home() {
     }
   };
 
-  // Show nothing while checking session (avoids login flash)
-  if (!sessionChecked) {
-    return (
-      <div className="h-screen flex bg-[#0d0f14] text-white items-center justify-center">
-        <div className="w-5 h-5 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div className="h-screen flex bg-[#0d0f14] text-white overflow-hidden">
       <Sidebar />
@@ -114,11 +104,11 @@ function Home() {
 
             <button
               onClick={handleGoogleLogin}
-              disabled={loginLoading}
+              disabled={loginLoading || sessionChecking}
               className="w-full flex items-center justify-center gap-3 py-[11px] rounded-xl text-sm font-medium text-white bg-gradient-to-br from-indigo-500 to-violet-700 hover:from-indigo-400 hover:to-violet-600 active:from-indigo-600 active:to-violet-800 border border-indigo-500/30 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all duration-150 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <FaGoogle size={15} className="text-white" />
-              {loginLoading ? "Signing in..." : "Continue with Google"}
+              {sessionChecking ? "Checking session..." : loginLoading ? "Signing in..." : "Continue with Google"}
             </button>
 
             {loginError && (
