@@ -6,6 +6,14 @@ import fs from "fs/promises";
 import { uploadToS3 } from "../utils/uploadToS3.js";
 import { getDownloadUrl } from "../utils/getDownloadUrl.js";
 
+const resolveUrl = (raw) => {
+  if (!raw) return "http://localhost:8002";
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+  if (raw.includes(".onrender.com")) return `https://${raw}`;
+  if (raw.includes(":")) return `https://mulgents-chat-service.onrender.com`;
+  return `http://${raw}`;
+};
+
 export const chat =
 async(req,res,next)=>{
 
@@ -43,18 +51,14 @@ await addMessage(
  prompt
 );
 
-await axios.post(`${process.env.CHAT_SERVICE}/save-message`,{
+const chatServiceUrl = resolveUrl(process.env.CHAT_SERVICE);
+
+await axios.post(`${chatServiceUrl}/save-message`,{
   conversationId,
   role:"user",
   content:prompt,
   images: userImages
-})
-
-
-
-
-
-
+});
 
   const result =
   await graph.invoke({
@@ -82,7 +86,7 @@ await axios.post(`${process.env.CHAT_SERVICE}/save-message`,{
  result.response
 );
 await axios.post(
- `${process.env.CHAT_SERVICE}/save-message`,
+ `${chatServiceUrl}/save-message`,
  {
   conversationId,
   role:"assistant",

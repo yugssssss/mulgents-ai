@@ -22,7 +22,7 @@ export const getModel = (agent) => {
 
     case "vision":
       return new ChatGoogleGenerativeAI({
-        model: "gemini-3.6-flash",
+        model: "gemini-1.5-flash",
         apiKey: googleKey,
       });
 
@@ -31,7 +31,7 @@ export const getModel = (agent) => {
     default:
       return new ChatGroq({
         apiKey: groqKey,
-        model: "openai/gpt-oss-20b",
+        model: "llama-3.1-8b-instant",
         temperature: 0,
         maxTokens: 2048,
         maxRetries: 2,
