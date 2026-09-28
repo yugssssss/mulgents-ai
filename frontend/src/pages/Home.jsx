@@ -16,7 +16,7 @@ function Home() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [sessionChecking, setSessionChecking] = useState(true);
 
-  // On mount: attempt session restore with 4s timeout (so page never hangs)
+  // On mount: attempt session restore + pre-warm all backend services
   useEffect(() => {
     const restoreSession = async () => {
       try {
@@ -29,6 +29,11 @@ function Home() {
       } finally {
         setSessionChecking(false);
       }
+    };
+
+    // Pre-warm all backend services in background so they're ready when user types
+    const warmupServices = () => {
+      api.get("/api/warmup", { timeout: 12000 }).catch(() => {});
     };
 
     const checkRedirect = async () => {
@@ -44,6 +49,7 @@ function Home() {
     };
 
     restoreSession();
+    warmupServices(); // Fire and forget
     checkRedirect();
   }, []);
 

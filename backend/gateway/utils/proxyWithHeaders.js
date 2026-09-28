@@ -1,13 +1,13 @@
 import proxy from "express-http-proxy";
 
-export const proxyWithUser = (serviceUrl) => {
+export const proxyWithUser = (serviceUrl, timeoutMs = 60000) => {
   return proxy(serviceUrl, {
     parseReqBody: true,
-    timeout: 60000,
+    timeout: timeoutMs,
     proxyErrorHandler: (err, res, next) => {
       console.error(`Proxy error connecting to target service (${serviceUrl}):`, err?.message || err);
       res.status(503).json({
-        message: "Service is starting up or temporarily unavailable. Please try again in a few seconds.",
+        message: "Service is starting up. Please wait ~30 seconds and try again.",
         error: err?.message
       });
     },

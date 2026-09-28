@@ -37,21 +37,10 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 const resolveServiceUrl = (envVar, renderServiceName, localPort) => {
   const raw = process.env[envVar];
 
-  // If not set at all, use local fallback
   if (!raw) return `http://localhost:${localPort}`;
-
-  // Already a full URL
   if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-
-  // Internal Render hostport like "mulgents-auth-service:8001"
-  // or just a hostname — use HTTPS if it looks like a Render service
   if (raw.includes(".onrender.com")) return `https://${raw}`;
-
-  // Render internal format "service-name:port" — use public URL instead
-  if (raw.includes(":")) {
-    return `https://${renderServiceName}.onrender.com`;
-  }
-
+  if (raw.includes(":")) return `https://${renderServiceName}.onrender.com`;
   return `http://${raw}`;
 };
 
@@ -65,13 +54,38 @@ console.log(`🔗 Chat    -> ${chatService}`);
 console.log(`🔗 Agent   -> ${agentService}`);
 console.log(`🔗 Billing -> ${billingService}`);
 
-const makeProxy = (serviceName, targetUrl) =>
+// Warmup: ping a service URL to wake it from Render sleep
+const pingService = (name, url) =>
+  fetch(url, { signal: AbortSignal.timeout(10000) })
+    .then(() => ({ name, status: "awake" }))
+    .catch(e => ({ name, status: "waking", error: e.message }));
+
+// /api/warmup — call this from the frontend before sending a message
+app.get("/api/warmup", async (req, res) => {
+  const results = await Promise.allSettled([
+    pingService("auth",    authService),
+    pingService("chat",    chatService),
+    pingService("agent",   agentService),
+    pingService("billing", billingService),
+  ]);
+  res.json({ warmup: results.map(r => r.value || r.reason) });
+});
+
+// Self-ping every 14 minutes to keep gateway itself awake on Render free tier
+const GATEWAY_URL = process.env.GATEWAY_URL || `http://localhost:${port}`;
+setInterval(() => {
+  fetch(`${GATEWAY_URL}/`)
+    .then(() => console.log("♻️  Gateway self-ping OK"))
+    .catch(e => console.log("♻️  Gateway self-ping failed:", e.message));
+}, 14 * 60 * 1000);
+
+const makeProxy = (serviceName, targetUrl, timeoutMs = 60000) =>
   proxy(targetUrl, {
-    timeout: 60000,
+    timeout: timeoutMs,
     proxyErrorHandler: (err, res, next) => {
       console.error(`❌ Proxy [${serviceName}] -> ${targetUrl} : ${err?.message}`);
       return res.status(503).json({
-        message: `${serviceName} is unavailable. Please retry in a few seconds.`,
+        message: `${serviceName} is starting up. Please wait ~30 seconds and try again.`,
         code: err?.code
       });
     }
@@ -80,7 +94,8 @@ const makeProxy = (serviceName, targetUrl) =>
 app.use("/api/auth",    makeProxy("Auth Service",    authService));
 app.use("/api/me",      protect, getCurrentUser);
 app.use("/api/chat",    protect, proxyWithUser(chatService));
-app.use("/api/agent",   protect, proxyWithUser(agentService));
+// Agent can take 120s: 50s cold-start + LLM processing time
+app.use("/api/agent",   protect, proxyWithUser(agentService, 120000));
 app.use("/api/billing", protect, proxyWithUser(billingService));
 
 app.get("/", (req, res) => {
