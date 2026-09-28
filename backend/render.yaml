@@ -126,6 +126,11 @@ services:
           type: web
           name: mulgents-gateway
           property: url
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: mulgents-redis
+          property: connectionString
 
   # -------------------------------------------------------------
   # 5. BILLING SERVICE (Web Service - Free Plan)
