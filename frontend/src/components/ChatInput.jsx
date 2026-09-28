@@ -206,7 +206,7 @@ const toggleMic = () => {
         title: isTimeout ? "Request Timed Out" : (error.response?.data?.title || "Something went wrong"),
         message: isTimeout
           ? "The AI service is waking up. Please try again in a few seconds."
-          : (error.response?.data?.message || "Please try again."),
+          : (error.response?.data?.message || error.message || "Please try again."),
       });
     } finally {
       dispatch(setIsLoading(false));
