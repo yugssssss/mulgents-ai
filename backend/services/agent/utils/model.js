@@ -31,7 +31,7 @@ export const getModel = (agent) => {
     default:
       return new ChatGroq({
         apiKey: groqKey,
-        model: "llama-3.1-8b-instant",
+        model: "llama3-8b-8192",
         temperature: 0,
         maxTokens: 2048,
         maxRetries: 2,
