@@ -94,8 +94,8 @@ const makeProxy = (serviceName, targetUrl, timeoutMs = 60000) =>
 app.use("/api/auth",    makeProxy("Auth Service",    authService));
 app.use("/api/me",      protect, getCurrentUser);
 app.use("/api/chat",    protect, proxyWithUser(chatService));
-// Agent can take 120s: 50s cold-start + LLM processing time
-app.use("/api/agent",   protect, proxyWithUser(agentService, 120000));
+// Agent POST /chat now returns jobId immediately (< 1s), GET /status/:jobId polls result
+app.use("/api/agent",   protect, proxyWithUser(agentService, 15000));
 app.use("/api/billing", protect, proxyWithUser(billingService));
 
 app.get("/", (req, res) => {
