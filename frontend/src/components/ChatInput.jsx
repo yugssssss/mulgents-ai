@@ -163,11 +163,11 @@ const toggleMic = () => {
     const prompt = value.trim();
     if (!prompt) return;
 
+    // Clear input immediately (before async calls)
+    setValue("");
     dispatch(setIsLoading(true));
 
     try {
-
-
       let conversation = selectedConversation;
 
       if (!conversation) {
@@ -187,74 +187,29 @@ const toggleMic = () => {
         userImages.push(URL.createObjectURL(selectedFile));
       }
       dispatch(addMessage({ role: "user", content: prompt, images: userImages }));
-      setValue("");
 
       const formData = new FormData();
-
-formData.append(
-    "conversationId",
-    conversation._id
-);
-
-formData.append(
-    "prompt",
-    prompt
-);
-
-formData.append(
-    "agent",
-    selectedAgent
-);
-
-if(selectedFile){
-
-    formData.append(
-        "file",
-        selectedFile
-    );
-
-}
-
-setSelectedFile(null)
+      formData.append("conversationId", conversation._id);
+      formData.append("prompt", prompt);
+      formData.append("agent", selectedAgent);
+      if (selectedFile) formData.append("file", selectedFile);
+      setSelectedFile(null);
 
       const data = await sendPrompt(formData);
-    console.log(data)
-     dispatch(
-  addMessage({
-    role: "assistant",
-    content: data.answer,
-    images:data.images
-  })
-);
+      dispatch(addMessage({ role: "assistant", content: data.answer, images: data.images }));
+      if (data.artifacts) dispatch(setArtifacts(data.artifacts));
 
-console.log(data)
-
-if(data.artifacts){
-  dispatch(
-    setArtifacts(
-      data.artifacts
-    )
-  );
-}}
-catch(error){
-
-  setBanner({
-
-    open:true,
-
-    title:
-      error.response?.data?.title ||
-      "Something went wrong",
-
-    message:
-      error.response?.data?.message ||
-      "Please try again."
-
-  });
-
-}
-  finally {
-       dispatch(setIsLoading(false));
+    } catch (error) {
+      const isTimeout = error.code === "ECONNABORTED" || error.message?.includes("timeout");
+      setBanner({
+        open: true,
+        title: isTimeout ? "Request Timed Out" : (error.response?.data?.title || "Something went wrong"),
+        message: isTimeout
+          ? "The AI service is waking up. Please try again in a few seconds."
+          : (error.response?.data?.message || "Please try again."),
+      });
+    } finally {
+      dispatch(setIsLoading(false));
     }
   };
 
