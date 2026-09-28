@@ -8,7 +8,7 @@ services:
     dockerContext: backend
     dockerfilePath: backend/gateway/Dockerfile
     plan: free
-    region: singapore # Change to your preferred region
+    region: oregon # Fix cross-region internal networking
     envVars:
       - key: PORT
         value: 8000
